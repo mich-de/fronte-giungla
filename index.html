@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05060d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Fronte Giungla</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +43,8 @@ body.touch #btns{display:flex}
 #top{position:absolute;z-index:4;top:calc(8px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:flex;gap:8px}
 .tb{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:rgba(5,6,13,.55);color:var(--ink);font:10px/1 var(--px);padding:0}
 .tb[aria-pressed="true"]{color:var(--red)}
+.tb svg{display:block;margin:auto}
+.tb.dbg{color:var(--gold);border-color:rgba(255,207,74,.5)}
 button{cursor:pointer}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </style>
@@ -55,6 +60,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <button id="bA" class="pb" aria-label="Salta">A<small>SALTO</small></button>
   </div>
   <div id="top">
+    <button id="bWeap" class="tb dbg" aria-label="Cambia arma (debug)" hidden>W</button>
+    <button id="bWarp" class="tb dbg" aria-label="Salta avanti (debug)" hidden>&raquo;</button>
+    <button id="bFs" class="tb" aria-label="Schermo intero"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5"/></svg></button>
     <button id="bMute" class="tb" aria-label="Audio on/off" aria-pressed="false">&#9834;</button>
     <button id="bPause" class="tb" aria-label="Pausa">II</button>
   </div>
@@ -63,7 +71,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 <script>
 (() => {
 'use strict';
-const W = 384, H = 216, WATER = 196, G = 0.21, LEVEL_W = 3600, WALL_X = 3470;
+let W = 384;
+const H = 216, WATER = 196, G = 0.21, LEVEL_W = 3600, WALL_X = 3470;
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 cv.width = W; cv.height = H;
@@ -191,13 +200,18 @@ function readInput() {
   inp.fire = !!(k.KeyX || k.KeyJ || touch.fire);
   inp.jumpE = inp.jump && !prevJ; inp.fireE = inp.fire && !prevF;
   prevJ = inp.jump; prevF = inp.fire;
-  for (const c of 'lrud') { if (inp[c] && !prevDir[c]) dirEdges.push(c.toUpperCase()); prevDir[c] = inp[c]; }
+  for (const c of 'lrud') { inp[c + 'E'] = inp[c] && !prevDir[c]; if (inp[c + 'E']) dirEdges.push(c.toUpperCase()); prevDir[c] = inp[c]; }
   if (dirEdges.length > 12) dirEdges.splice(0, dirEdges.length - 12);
 }
 addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
   if (!keys[e.code] && (e.code === 'Enter' || e.code === 'KeyP' || e.code === 'Escape')) {
     if (state === 'play' || state === 'pause') togglePause(); else tapped = true;
+  }
+  if (!keys[e.code]) {
+    if (e.code === 'KeyF') toggleFullscreen();
+    if (e.code === 'KeyC') cycleWeapon();
+    if (e.code === 'KeyV') warp();
   }
   keys[e.code] = true; gesture();
   document.body.classList.remove('touch');
@@ -229,7 +243,7 @@ function moveStick(e) {
   for (const c of map[sec]) touch[c] = 1;
 }
 pad.addEventListener('pointerdown', e => {
-  e.preventDefault(); gesture();
+  e.preventDefault(); gesture(); autoFs(e);
   if (stickId !== null) return;
   stickId = e.pointerId; pad.setPointerCapture(e.pointerId);
   const r = pad.getBoundingClientRect();
@@ -247,7 +261,7 @@ pad.addEventListener('pointerup', endStick);
 pad.addEventListener('pointercancel', endStick);
 function holdBtn(el, key) {
   el.addEventListener('pointerdown', e => {
-    e.preventDefault(); gesture();
+    e.preventDefault(); gesture(); autoFs(e);
     el.setPointerCapture(e.pointerId); touch[key] = 1; el.classList.add('on');
   });
   const up = () => { touch[key] = 0; el.classList.remove('on'); };
@@ -257,7 +271,42 @@ function holdBtn(el, key) {
 }
 holdBtn($('bB'), 'fire');
 holdBtn($('bA'), 'jump');
-cv.addEventListener('pointerdown', () => { gesture(); tapped = true; });
+cv.addEventListener('pointerdown', e => {
+  gesture(); autoFs(e); tapped = true;
+  const r = cv.getBoundingClientRect(); tapY = (e.clientY - r.top) / r.height * H;
+});
+// fullscreen: automatic on the first touch from the title screen, toggle with the button or F
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsReq = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+function goFullscreen() {
+  if (fsEl() || !fsReq) return;
+  try {
+    const r = fsReq.call(document.documentElement, {navigationUI:'hide'});
+    if (r && r.then) r.then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {});
+  } catch (e) {}
+}
+function toggleFullscreen() {
+  if (fsEl()) { const x = document.exitFullscreen || document.webkitExitFullscreen; if (x) x.call(document); }
+  else goFullscreen();
+}
+function autoFs(e) { if (e.pointerType === 'touch' && (state === 'title' || state === 'over')) goFullscreen(); }
+if (!fsReq) $('bFs').hidden = true;
+$('bFs').addEventListener('click', () => { gesture(); toggleFullscreen(); });
+document.addEventListener('fullscreenchange', () => setTimeout(fit, 60));
+document.addEventListener('webkitfullscreenchange', () => setTimeout(fit, 60));
+// debug tools, god mode only
+function cycleWeapon() {
+  if (!god || state !== 'play' || p.dead) return;
+  const L = ['N', 'M', 'S', 'L']; p.w = L[(L.indexOf(p.w) + 1) % L.length]; sfx.power();
+}
+function warp() {
+  if (!god || state !== 'play' || p.dead || bossOn) return;
+  cam.x = Math.min(cam.x + 400, LEVEL_W - W);
+  p.x = cam.x + 150; p.y = -20; p.vy = 0; p.mode = 'air'; p.jumping = false; p.on = null; pb = []; eb = [];
+}
+$('bWeap').addEventListener('click', cycleWeapon);
+$('bWarp').addEventListener('click', warp);
+document.querySelectorAll('.tb').forEach(b => b.addEventListener('click', () => b.blur()));
 $('bPause').addEventListener('click', () => { gesture(); togglePause(); });
 const bMute = $('bMute');
 function setMute(m) {
@@ -279,6 +328,7 @@ let p, cam, ents, pb, eb, fx, items, segs, ALLP, spawnList, scars;
 let score = 0, lives = 2, loop = 0, nextLife = 20000, spawnT = 120;
 let bossOn = false, bossDead = false, clearT = 0, bossSnipT = 0, bannerT = 0, shakeT = 0;
 let konami = false, kArmed = 0, msgT = 0;
+let god = false, menuSel = 0, tapY = 0, fps = 60;
 let hiscore = 20000;
 try { hiscore = Math.max(hiscore, +localStorage.getItem('fg-hi') || 0); } catch (e) {}
 const diff = () => 1 + loop * 0.3;
@@ -299,13 +349,14 @@ function startStage() {
   spawnList = SPAWNS.map(s => Object.assign({done:false}, s));
   p = newPlayer(40, 160);
 }
-function newGame(extraLives) {
+function newGame(extraLives, godMode) {
+  god = godMode; $('bWeap').hidden = $('bWarp').hidden = !god;
   score = 0; lives = extraLives; loop = 0; nextLife = 20000;
   startStage(); state = 'play'; stateT = 0;
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
 function saveHi() {
-  if (score > hiscore) { hiscore = score; try { localStorage.setItem('fg-hi', String(hiscore)); } catch (e) {} }
+  if (!god && score > hiscore) { hiscore = score; try { localStorage.setItem('fg-hi', String(hiscore)); } catch (e) {} }
 }
 
 /* ---------------- physics helpers ---------------- */
@@ -380,7 +431,7 @@ function phb() {
   return [p.x - 4, p.y - 25, p.x + 4, p.y];
 }
 function killPlayer() {
-  if (p.dead || p.inv > 0 || p.barrier > 0 || clearT) return;
+  if (god || p.dead || p.inv > 0 || p.barrier > 0 || clearT) return;
   p.dead = true; p.deadT = 0; p.vy = -3; p.mode = 'air'; p.jumping = false; p.prone = false;
   sfx.die();
 }
@@ -606,8 +657,14 @@ function step() {
     if (dirEdges.join('').endsWith(KONAMI)) { kArmed = 1; }
     if (kArmed === 1 && inp.fireE) { kArmed = 2; dirEdges.length = 0; }
     else if (kArmed === 2 && inp.jumpE) { konami = true; msgT = 70; sfx.power(); kArmed = 0; }
-    else if (go && !kArmed && !msgT) newGame(konami ? 29 : 2);
-    if (konami && msgT === 1) newGame(29);
+    else {
+      if (inp.uE) menuSel = 0;
+      if (inp.dE) menuSel = 1;
+      if (tapped && tapY >= 103 && tapY < 118) menuSel = 0;
+      else if (tapped && tapY >= 118 && tapY < 134) menuSel = 1;
+      if (go && !kArmed && !msgT) newGame(konami ? 29 : 2, menuSel === 1);
+    }
+    if (konami && msgT === 1) newGame(29, menuSel === 1);
     tapped = false; return;
   }
   tapped = tapped && state !== 'play';
@@ -711,7 +768,7 @@ function step() {
     if (clearT === 200) { score += 5000; saveHi(); state = 'clear'; stateT = 0; sfx.fanfare(); }
   }
   if (score >= nextLife) { lives++; nextLife += 60000; sfx.power(); }
-  if (score > hiscore) hiscore = score;
+  if (score > hiscore && !god) hiscore = score;
 }
 
 /* ---------------- pre-rendered art ---------------- */
@@ -733,7 +790,7 @@ function palm(g, x, base, h, lean, trunk, leaf) {
     }
   }
 }
-const SKY = layer(W, g => {
+function mkSky() { return layer(W, g => {
   const gr = g.createLinearGradient(0, 0, 0, H);
   gr.addColorStop(0, '#070a1f'); gr.addColorStop(0.55, '#1a2350'); gr.addColorStop(1, '#3a2f5e');
   g.fillStyle = gr; g.fillRect(0, 0, W, H);
@@ -741,7 +798,8 @@ const SKY = layer(W, g => {
   for (let i = 0; i < 70; i++) { g.fillStyle = r() < 0.2 ? '#f4efe1' : '#8c96c8'; g.fillRect(r() * W | 0, r() * 120 | 0, 1, 1); }
   g.fillStyle = '#f2e6c4'; g.beginPath(); g.arc(318, 38, 12, 0, 7); g.fill();
   g.fillStyle = '#d9caa2'; g.fillRect(312, 33, 4, 3); g.fillRect(320, 42, 3, 3);
-});
+}); }
+let SKY = mkSky();
 const FAR = layer(768, (g, w) => {
   const T = 2 * Math.PI / w;
   for (let x = 0; x < w; x++) {
@@ -977,6 +1035,10 @@ function hud() {
   txt(String(score).padStart(7, '0'), 8, 21);
   if (p.w !== 'N' || p.rapid) txt(p.w + (p.rapid ? '+' : ''), 72, 21, '#ffcf4a');
   txt('HI ' + String(hiscore).padStart(7, '0'), W / 2, 8, '#9fb0c8', 'center');
+  if (god) {
+    txt('GOD', 104, 21, '#e8402a');
+    txt(`X${p.x | 0} CAM${cam.x | 0} E${ents.length} PB${pb.length} EB${eb.length} ${fps}FPS`, 8, 204, '#cfe8ff');
+  }
 }
 function overlay(a) { R(0, 0, W, H, `rgba(5,6,13,${a})`); }
 function blink() { return ((frame >> 5) & 1) === 0; }
@@ -1007,11 +1069,18 @@ function draw() {
     ctx.font = '24px ' + PX; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillStyle = '#e8402a'; ctx.fillText('GIUNGLA', W / 2 + 2, 58); ctx.fillStyle = '#ffcf4a'; ctx.fillText('GIUNGLA', W / 2, 56);
     txt('OPERAZIONE ALBA ROSSA', W / 2, 92, '#9fb0c8', 'center');
-    if (msgT > 0) txt('30 VITE!', W / 2, 122, '#ffcf4a', 'center', 16);
-    else if (blink()) txt(touchUI ? 'PREMI B PER INIZIARE' : 'PREMI X PER INIZIARE', W / 2, 124, '#f4efe1', 'center');
-    if (touchUI) { txt('LEVETTA: MUOVI E MIRA', W / 2, 152, '#9fb0c8', 'center'); txt('B: SPARA   A: SALTA', W / 2, 164, '#9fb0c8', 'center'); }
-    else { txt('FRECCE: MUOVI E MIRA', W / 2, 152, '#9fb0c8', 'center'); txt('X: SPARA   Z: SALTA   P: PAUSA', W / 2, 164, '#9fb0c8', 'center'); }
-    txt('GIU+SALTO: SCENDI DALLE PIATTAFORME', W / 2, 176, '#9fb0c8', 'center');
+    if (msgT > 0) txt('30 VITE!', W / 2, 112, '#ffcf4a', 'center', 16);
+    else {
+      ['GIOCA', 'GOD MODE (DEBUG)'].forEach((s, i) => {
+        const y = 107 + i * 14, sel = i === menuSel;
+        txt(s, W / 2, y, sel ? (i ? '#ff6a50' : '#ffcf4a') : '#6f7d99', 'center');
+        if (sel && blink()) txt('>', W / 2 - s.length * 4 - 14, y, sel && i ? '#ff6a50' : '#ffcf4a');
+      });
+      txt(touchUI ? 'SU/GIU O TOCCA: SCEGLI   B: VIA' : 'SU/GIU: SCEGLI   X: VIA', W / 2, 138, '#f4efe1', 'center');
+    }
+    if (touchUI) { txt('LEVETTA: MUOVI E MIRA', W / 2, 156, '#9fb0c8', 'center'); txt('B: SPARA   A: SALTA', W / 2, 168, '#9fb0c8', 'center'); }
+    else { txt('FRECCE: MUOVI E MIRA   F: SCHERMO INTERO', W / 2, 156, '#9fb0c8', 'center'); txt('X: SPARA   Z: SALTA   P: PAUSA', W / 2, 168, '#9fb0c8', 'center'); }
+    txt('GIU+SALTO: SCENDI DALLE PIATTAFORME', W / 2, 180, '#9fb0c8', 'center');
     txt('HI ' + String(hiscore).padStart(7, '0'), W / 2, 200, '#f4efe1', 'center');
     return;
   }
@@ -1039,6 +1108,8 @@ function fit() {
   const app = $('app'), cs = getComputedStyle(app);
   const aw = app.clientWidth, ah = app.clientHeight - parseFloat(cs.paddingTop);
   const portrait = ah > aw;
+  const nw = portrait ? 384 : Math.max(384, Math.min(512, Math.round(H * aw / ah)));
+  if (nw !== W) { W = nw; cv.width = W; SKY = mkSky(); if (cam) cam.x = Math.min(cam.x, LEVEL_W - W); if (segs) draw(); }
   const s = Math.min(aw / W, (portrait ? ah * 0.5 : ah) / H);
   cv.style.width = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
@@ -1049,11 +1120,12 @@ addEventListener('orientationchange', () => setTimeout(fit, 200));
 fit();
 
 startStage(); state = 'title';
-let acc = 0, last = 0;
+let acc = 0, last = 0, fpsN = 0, fpsT = 0;
 function tick(ts) {
   requestAnimationFrame(tick);
   if (!last) last = ts;
   acc += Math.min(100, ts - last); last = ts;
+  fpsN++; if (ts - fpsT >= 1000) { fps = fpsN; fpsN = 0; fpsT = ts; }
   let n = 0;
   while (acc >= 1000 / 60 && n < 5) { step(); acc -= 1000 / 60; n++; }
   draw();
