@@ -34,8 +34,10 @@ Il giocatore è invulnerabile, il record non viene salvato e compaiono gli strum
 
 Gioca a giochi NES nel browser. Le ROM stanno in una **cartucciera**: uno scaffale di cartucce salvate sul dispositivo (IndexedDB), mai caricate online.
 
+Al primo avvio arrivano già installate **Contra (USA)** e **Super Mario Bros. (Europe) (Rev A)**, incluse nel sito.
+
 1. Vai al link sopra.
-2. Tocca **+ AGGIUNGI** e scegli uno o più file `.nes` o `.zip`.
+2. Tocca **+ AGGIUNGI** e scegli uno o più file `.nes` o `.zip` (le ROM già incluse non vanno aggiunte).
 3. Tocca una cartuccia per inserirla, toccala di nuovo (o premi **GIOCA**) per giocare. **⏏** torna alla cartucciera.
 4. **TOGLI CARTUCCIA** la elimina insieme ai suoi salvataggi. Con un controller: sinistra/destra per scegliere, START o A per giocare.
 

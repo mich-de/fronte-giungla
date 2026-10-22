@@ -409,11 +409,31 @@ function stepCart(d) {
   const i = carts.findIndex(x => x.id === selId);
   selectCart(carts[((i < 0 ? 0 : i + d) + carts.length) % carts.length].id);
 }
+/* ---------- cartucciera: ROM incluse nel sito, scaricate una volta e poi salvate sul dispositivo ---------- */
+const PRESETS = [
+  {file: 'Contra (USA).nes', name: 'Contra (USA)'},
+  {file: 'Super Mario Bros. (Europe) (Rev A).nes', name: 'Super Mario Bros. (Europe) (Rev A)'},
+];
+async function loadPresets() {
+  if (lsGet('nes-presets') === '1') return;   // già installate (l'utente può toglierle)
+  let ok = true;
+  for (const p of PRESETS) {
+    try {
+      const res = await fetch(p.file, {cache: 'force-cache'});
+      if (!res.ok) { ok = false; continue; }   // offline/404 la prima volta: riprova al prossimo avvio
+      const u8 = new Uint8Array(await res.arrayBuffer());
+      if (!(u8[0] === 0x4e && u8[1] === 0x45 && u8[2] === 0x53 && u8[3] === 0x1a)) { ok = false; continue; }
+      await addCart(p.name, bytesToStr(u8));   // fnv: se c'è già non fa niente
+    } catch (e) { ok = false; }   // spazio esaurito o rete: la cartucciera resta usabile
+  }
+  if (ok) lsSet('nes-presets', '1');
+}
 async function loadShelf() {
   const saved = await kvGet('carts');
   carts = Array.isArray(saved) ? saved.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string') : [];
   const old = await kvGet('rom');   // single-ROM storage of the previous version
   if (old && old.str) { try { await addCart(old.name, old.str); await kvDel('rom'); } catch (e) { showErr('Non sono riuscito a spostare la vecchia ROM nella cartucciera: ' + e.message); } }
+  await loadPresets();
   const want = lsGet('nes-cart');
   selectCart(carts.some(c => c.id === want) ? want : carts.length ? carts[0].id : null);
 }
