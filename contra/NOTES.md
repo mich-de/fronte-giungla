@@ -175,7 +175,8 @@ commenti dei listing.
 - **Joypad** (`LC397`/`LC35B`): `$04/$05` raw, `$F1/$F2` held, `$F5/$F6`
   edge, `$F9/$FA` prev.
 - **Player controller** (bank7 $D4xx-$E6xx), variabili zp per giocatore
-  (X=0/1): `$90` vite, `$94/$96` posizione, `$98` subpixel X, `$9A` vx,
+  (X=0/1): `$32` vite (non `$90`, che è lo stato giocatore), `$AE` timer
+  invincibilità, `$94/$96` posizione, `$98` subpixel X, `$9A` vx,
   `$A0` grounded, `$A4` pose, **`$C4` subpixel Y, `$C6` vy** (negativo = su,
   gravità +1/frame, landing azzera), `$BC` azione. Salto in `LD6D3`: sceglie
   vy iniziale `$FB` o `$FC` dal bit0 di `$40`.
@@ -189,6 +190,22 @@ commenti dei listing.
   nametable `EOR #$01` su `$FF`, fine stage quando `$64 == $48`.
 - **Enemy loop** bank0 $E61E: 16 slot `$04B8+X`, tipo `$0528+X` → jump
   table $E6A8 con dispatch indiretto `jmp ($04)`.
+
+## 8b. Trucchi (God mode, 30 vite)
+
+`make cheats` → `build/contra-god.nes`, `build/contra-30vite.nes` (gitignored).
+Tabella in `tools/cheats.py`, identica a `CHEATS` in `nes/index.html` (dove
+gli interruttori sul loader patchano la ROM in memoria prima di `loadROM`).
+
+| Trucco | Indirizzo | Byte | Effetto |
+|---|---|---|---|
+| God | $E2C1 | B5→A9 | `lda $AE,x`→`lda #$AE`: il salto della collisione nemici/proiettili è sempre preso; niente lampeggio |
+| God | $DA03 | D6→B5 | `dec $32,x`→`lda $32,x`: le cadute nei burroni non costano vite |
+| 30 vite | $C462 | 02→1D | vite iniziali 29 (REST 30), stesso valore del codice Konami (`$24`) |
+
+Verificati in jsnes headless (12000 frame camminando a destra): normale game
+over a ~f3000; solo $E2C1 = niente morti da nemici ma i burroni uccidono;
+God = vite ferme; 30 vite = REST 30 nell'intro dello stage 1.
 
 ## 9. Cosa non fare mai
 

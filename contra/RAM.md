@@ -34,7 +34,9 @@ traces; the rest are inferred from code context and may be incomplete.
 | $2B | 1 | retry | Set to 2 on game restart (LC32C) |
 | $2C | 1 | substate | In-game sub-dispatcher index, table at $CE35 (11 entries: $CE4B level init … $D02E) |
 | $2D | 1 | subtimer | Substate timer (LCF27) |
+| $24 | 1 | konami | Konami code entered on title: lives init uses $1D instead of $02 (C461) |
 | $30 | 1 | stage | Stage id 0-7: indexes $40 param copy ($B319+stage*32), scroll table $CEC8 |
+| $32/$33 | 2 | lives | Lives left, player 0/1 (obs): 2 at start = REST 3, 0 = last life; init C461, `dec` on death DA03, extra life C502 (max $63) |
 | $34/$35 | 2 | rng | LFSR-ish RNG ($1A+$34 adc chain in main spin loop) |
 | $37 | 1 | flag | Checked before death/continue (D713/D833) |
 | $38/$39 | 2 | death_req | Both nonzero → death sequence (LCEEE) |
@@ -50,7 +52,7 @@ traces; the rest are inferred from code context and may be incomplete.
 | $77 | 1 | scroll_bias | Added to $68 (LDC6F) |
 | $82 | 1 | tmp | Cleared per nametable flip (LDC8B) |
 | $84 | 1 | death_ct | Incremented on timer expiry (LDC69) |
-| $90/$91 | 2 | lives | Lives, player 0/1 ($90,x — inc at respawn D568; init $03 in spawn) |
+| $90/$91 | 2 | p_state | Player state, player 0/1 (1 checked at D40E/D46C; set from LDAD1 on death D9FD). Not lives: see $32 |
 | $94/$95 | 2 | px_lo | Player X position low + $9A high byte math (D843) |
 | $96/$97 | 2 | py | Player Y position low (D5F3 clears with $98) |
 | $98/$99 | 2 | px_sub | Player X subpixel accumulator; += $D4 (D5FB) |
@@ -58,7 +60,8 @@ traces; the rest are inferred from code context and may be incomplete.
 | $9E/$9F | 2 | vx_lock | Horizontal velocity lock/knockback (D871) |
 | $A0/$A1 | 2 | grounded | Ground/ceiling state; nonzero = grounded (D6DD, E21C: vy applied only when !grounded) |
 | $A4/$A5 | 2 | pose | Stance/pose flags ($11/$41/$81/$91 written at D6DB/D6C7) |
-| $A6,$A8,$AC,$AE,$B0 | | misc_state | Cleared at init/respawn (DAF7-DAFF) |
+| $A6,$A8,$AC,$B0 | | misc_state | Cleared at init/respawn (DAF7-DAFF) |
+| $AE/$AF | 2 | invuln | Invincibility timer, player 0/1 (obs): $7F after respawn, `dec` per frame D467; nonzero skips enemy collision E2C1 and blinks the sprite (bank2 B004) |
 | $AA/$AB | 2 | cam_save | Saved camera X (CF2E) |
 | $B2/$B4 | 2 | air_flag / dir | $B2 nonzero = airborne-specific input; $B4 = facing (1 at init) |
 | $B8 | 2 | tmp | Direction temp (D6CB) |

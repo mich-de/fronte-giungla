@@ -51,3 +51,4 @@ Gioca a giochi NES nel browser. Per caricare una ROM:
 - A schermo c'è un controller NES (scocca grigia, frontale nero): sotto lo schermo in verticale, diviso in due metà ai lati in orizzontale.
 - Controller fisico: collegalo e premi un tasto. I comandi a schermo spariscono e tornano al primo tocco. Con due controller si gioca in due (es. Contra in cooperativa). **A⇄B** scambia i tasti se il controller li ha invertiti. Nel menu, START o A avvia il gioco.
 - **TB**: turbo su B. **SAV / LOAD**: salvataggio di stato.
+- **Trucchi per Contra (USA)**: con questa ROM caricata, nel menu compaiono **GOD MODE** (invincibile a nemici e proiettili, le cadute non costano vite) e **30 VITE**. Si attivano prima di premere GIOCA. I salvataggi di stato sono separati per ogni combinazione di trucchi.

@@ -48,6 +48,9 @@ verify: $(OUT)
 	@a=$$(sha1sum "$(ORIG)" | cut -d' ' -f1); b=$$(sha1sum $(OUT) | cut -d' ' -f1); \
 	if [ "$$a" = "$$b" ]; then echo "IDENTICAL OK"; else echo "MISMATCH"; exit 1; fi
 
+cheats: $(OUT)
+	python3 tools/cheats.py "$(ORIG)"
+
 info: gen-info.sh
 	bash gen-info.sh
 
@@ -56,4 +59,4 @@ info: gen-info.sh
 clean:
 	rm -f src/bank*.s src/bank*.s.tmp build/obj-*.o $(OUT)
 
-.PHONY: all verify info clean
+.PHONY: all verify info clean cheats

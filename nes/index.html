@@ -103,6 +103,9 @@ body.padmode #ctl{display:none}
 .note{font-size:7px;line-height:1.9;color:var(--dim);margin:0}
 #padInfo{color:#ffd23a}
 #err{color:#ff7a70;font-size:8px;line-height:1.7;margin:0}
+.cheats{display:flex;gap:8px}
+.ch{flex:1;font-size:8px}
+.ch[aria-pressed="true"]{background:#ffd23a;color:#16161b;border-color:#ffd23a}
 button{cursor:pointer}
 button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
 </style>
@@ -147,6 +150,10 @@ button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
       <div class="cart">
         <div class="label" id="romLabel">NESSUNA CARTUCCIA</div>
         <button id="bResume" class="btn go" hidden>GIOCA</button>
+        <div id="cheats" class="cheats" hidden>
+          <button id="cGod" class="btn ch" aria-pressed="false">GOD MODE</button>
+          <button id="cLives30" class="btn ch" aria-pressed="false">30 VITE</button>
+        </div>
         <button id="bPick" class="btn">CARICA ROM (.NES / .ZIP)</button>
         <input id="file" type="file" accept=".nes,.zip,application/zip,application/octet-stream" hidden>
       </div>
@@ -209,8 +216,31 @@ function audioInit() {
   } catch (e) { AC = null; }
 }
 
+/* ---------- cheats: byte patches to Contra (USA) PRG bank 7 (fixed at $C000); same table as contra/tools/cheats.py ---------- */
+const PRG7 = a => 0x10 + 7 * 0x4000 + (a - 0xC000);
+const CHEATS = {
+  god: [[0xE2C1, 0xB5, 0xA9],     // lda $AE,x -> lda #$AE: enemy/bullet collision skip always taken (invincible, no blinking)
+        [0xDA03, 0xD6, 0xB5]],    // dec $32,x -> lda $32,x: falling into a pit never costs a life
+  lives30: [[0xC462, 0x02, 0x1D]] // starting lives 2 -> 29 (REST 30), the value the Konami code sets
+};
+const cheatOn = {god: lsGet('nes-cheat-god') === '1', lives30: lsGet('nes-cheat-lives30') === '1'};
+const cheatable = str => !!str && Object.values(CHEATS).flat().every(([a, orig]) => str.charCodeAt(PRG7(a)) === orig);
+const cheatTag = () => cheatable(romStr) ? Object.keys(CHEATS).filter(k => cheatOn[k]).join('+') : '';
+function patchedRom() {
+  if (!cheatTag()) return romStr;
+  const c = romStr.split('');
+  for (const k in CHEATS) if (cheatOn[k]) for (const [a, , val] of CHEATS[k]) c[PRG7(a)] = String.fromCharCode(val);
+  return c.join('');
+}
+for (const [id, k] of [['cGod', 'god'], ['cLives30', 'lives30']]) {
+  const b = $(id);
+  b.setAttribute('aria-pressed', String(cheatOn[k]));
+  b.addEventListener('click', () => { cheatOn[k] = !cheatOn[k]; b.setAttribute('aria-pressed', String(cheatOn[k])); lsSet('nes-cheat-' + k, cheatOn[k] ? '1' : '0'); });
+}
+const stateKey = () => 'state:' + romName + (cheatTag() ? ':' + cheatTag() : '');
+
 /* ---------- emulator ---------- */
-let nes = null, romStr = null, romName = '', running = false;
+let nes = null, romStr = null, romName = '', running = false, playStr = null;
 function makeNes() {
   return new jsnes.NES({
     sampleRate: AC ? AC.sampleRate : 44100,
@@ -264,18 +294,21 @@ function start() {
   if (!romStr) return;
   audioInit();
   nes = makeNes();
-  try { nes.loadROM(romStr); }
+  playStr = patchedRom();
+  try { nes.loadROM(playStr); }
   catch (e) { showErr('ROM non supportata dall’emulatore: ' + e.message); return; }
   $('loader').hidden = true;
   running = true;
   replayHeld();
   goFullscreen();
+  if (cheatTag()) toast([cheatOn.god && 'GOD MODE', cheatOn.lives30 && '30 VITE'].filter(Boolean).join(' + ') + ' ATTIVO');
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
 function showErr(m) { const e = $('err'); e.textContent = m; e.hidden = !m; }
 function setRomLabel() {
   $('romLabel').textContent = romName ? romName.toUpperCase() : 'NESSUNA CARTUCCIA';
   $('bResume').hidden = !romStr;
+  $('cheats').hidden = !cheatable(romStr);
 }
 $('bPick').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', async e => {
@@ -297,13 +330,13 @@ function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; c
 $('bSave').addEventListener('click', async () => {
   if (!nes || !running) return;
   const s = nes.toJSON(); delete s.romData;
-  toast(await kvSet('state:' + romName, s) ? 'STATO SALVATO' : 'SALVATAGGIO NON RIUSCITO');
+  toast(await kvSet(stateKey(), s) ? 'STATO SALVATO' : 'SALVATAGGIO NON RIUSCITO');
 });
 $('bLoad').addEventListener('click', async () => {
   if (!nes || !running) return;
-  const s = await kvGet('state:' + romName);
+  const s = await kvGet(stateKey());
   if (!s) { toast('NESSUN SALVATAGGIO'); return; }
-  try { s.romData = romStr; nes.fromJSON(s); toast('STATO CARICATO'); }
+  try { s.romData = playStr; nes.fromJSON(s); toast('STATO CARICATO'); }
   catch (e) { toast('CARICAMENTO NON RIUSCITO'); }
 });
 
