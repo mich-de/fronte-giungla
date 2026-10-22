@@ -25,7 +25,7 @@
 html{height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--px);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-#app{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#app{position:relative;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #screen{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000}
 @media (orientation:portrait){ #app{justify-content:flex-start;padding-top:52px} body.padmode #app{justify-content:center;padding-top:0} }
 
@@ -92,11 +92,24 @@ body.padmode #ctl{display:none}
 .tb svg{display:block;margin:auto}
 #toast{position:absolute;z-index:6;left:50%;top:calc(54px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(11,11,16,.85);border:1px solid var(--line);padding:8px 12px;border-radius:8px;font-size:8px;white-space:nowrap}
 
-#loader{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% 0%,#1d1e27 0%,var(--bg) 70%);padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));box-sizing:border-box}
-.card{width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px;align-items:stretch;text-align:center}
+#loader{position:absolute;inset:0;z-index:5;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;background:radial-gradient(120% 90% at 50% 0%,#1d1e27 0%,var(--bg) 70%);padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));box-sizing:border-box}
+.card{margin:auto;width:100%;max-width:560px;display:flex;flex-direction:column;gap:18px;align-items:stretch;text-align:center}
 .logo{font-size:20px;line-height:1.3;letter-spacing:.04em;margin:0;text-wrap:balance}
 .logo span{color:var(--red)}
 .cart{border:2px solid var(--grey);border-radius:6px 6px 2px 2px;background:linear-gradient(#2a2b33,#1a1b21);padding:14px 12px 12px;display:flex;flex-direction:column;gap:12px}
+.sub{margin:-10px 0 0;font-size:8px;letter-spacing:.3em;color:var(--dim)}
+/* cartucciera: grey NES-style carts on a rack; label colour comes from the cart id */
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:18px 12px;padding:18px 14px 14px;border-radius:8px;background:#15161b;border:2px solid #2a2b33;box-shadow:inset 0 6px 14px rgba(0,0,0,.5)}
+.cartridge{position:relative;aspect-ratio:12/13;width:100%;border:0;padding:0;border-radius:5px 5px 3px 3px;background:linear-gradient(#a3a19b,#8a8882);box-shadow:inset 0 2px 0 #c4c2bc,inset 0 -3px 0 #6e6c67,0 5px 0 rgba(0,0,0,.45);transition:transform .12s;touch-action:manipulation}
+.cartridge::after{content:"";position:absolute;left:14%;right:14%;bottom:8%;height:20%;background:repeating-linear-gradient(#7d7b76 0 2px,transparent 2px 5px);border-radius:2px}
+.lab{position:absolute;left:9%;right:9%;top:8%;height:56%;border-radius:3px;background:hsl(var(--h) 45% 22%);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);display:flex;align-items:flex-end;padding:5px;box-sizing:border-box;overflow:hidden}
+.lab::before{content:"";position:absolute;inset:0 0 auto;height:42%;background:linear-gradient(135deg,hsl(var(--h) 75% 58%),hsl(calc(var(--h) + 50) 70% 34%))}
+.lab b{position:relative;font:7px/1.45 var(--px);color:#fff;text-shadow:1px 1px 0 #000;text-align:left;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cartridge.sel{transform:translateY(-7px);outline:3px solid #ffd23a;outline-offset:3px}
+.cartridge.add{background:none;border:2px dashed var(--line);box-shadow:none;color:var(--dim);font:7px/1.8 var(--px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.cartridge.add::after{display:none}
+.cartridge.add big{font-size:22px;line-height:1;color:var(--ink)}
+.btn.small{padding:10px;font-size:7px;background:none;color:var(--dim)}
 .label{background:#eceae4;color:#16161b;border-radius:3px;padding:10px 8px;font-size:9px;line-height:1.6;overflow-wrap:anywhere}
 .btn{font:10px/1 var(--px);padding:14px 12px;border-radius:6px;border:2px solid var(--line);background:var(--grey);color:var(--ink);letter-spacing:.06em}
 .btn.go{background:var(--red);border-color:#f06a5f}
@@ -147,6 +160,8 @@ button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
   <div id="loader">
     <div class="card">
       <h1 class="logo">NES <span>TASCABILE</span></h1>
+      <p class="sub">CARTUCCIERA</p>
+      <div id="shelf" class="shelf" role="group" aria-label="Cartucce"></div>
       <div class="cart">
         <div class="label" id="romLabel">NESSUNA CARTUCCIA</div>
         <button id="bResume" class="btn go" hidden>GIOCA</button>
@@ -154,12 +169,12 @@ button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
           <button id="cGod" class="btn ch" aria-pressed="false">GOD MODE</button>
           <button id="cLives30" class="btn ch" aria-pressed="false">30 VITE</button>
         </div>
-        <button id="bPick" class="btn">CARICA ROM (.NES / .ZIP)</button>
-        <input id="file" type="file" accept=".nes,.zip,application/zip,application/octet-stream" hidden>
+        <button id="bDel" class="btn small" hidden>TOGLI CARTUCCIA</button>
+        <input id="file" type="file" accept=".nes,.zip,application/zip,application/octet-stream" multiple hidden>
       </div>
       <p id="err" hidden></p>
       <p class="note" id="padInfo" hidden></p>
-      <p class="note">La ROM resta solo su questo dispositivo: non viene caricata da nessuna parte.<br>Controller USB/Bluetooth: collegalo e premi un tasto (2 controller = 2 giocatori).<br>Tastiera: frecce, Z = B, X = A, Invio = Start, Shift = Select, F = schermo intero.</p>
+      <p class="note">Tocca una cartuccia per inserirla, toccala di nuovo per giocare. Le ROM restano solo su questo dispositivo: non vengono caricate da nessuna parte.<br>Controller USB/Bluetooth: collegalo e premi un tasto (2 controller = 2 giocatori).<br>Tastiera: frecce, Z = B, X = A, Invio = Start, Shift = Select, F = schermo intero.</p>
     </div>
   </div>
 </div>
@@ -188,6 +203,10 @@ function idb() {
 async function kvGet(k) {
   try { const db = await idb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(undefined); }); }
   catch (e) { return undefined; }
+}
+async function kvDel(k) {
+  try { const db = await idb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); t.oncomplete = t.onerror = res; }); }
+  catch (e) {}
 }
 async function kvSet(k, v) {
   try { const db = await idb(); await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); return true; }
@@ -237,7 +256,7 @@ for (const [id, k] of [['cGod', 'god'], ['cLives30', 'lives30']]) {
   b.setAttribute('aria-pressed', String(cheatOn[k]));
   b.addEventListener('click', () => { cheatOn[k] = !cheatOn[k]; b.setAttribute('aria-pressed', String(cheatOn[k])); lsSet('nes-cheat-' + k, cheatOn[k] ? '1' : '0'); });
 }
-const stateKey = () => 'state:' + romName + (cheatTag() ? ':' + cheatTag() : '');
+const stateKey = (base = selId) => 'state:' + base + (cheatTag() ? ':' + cheatTag() : '');
 
 /* ---------- emulator ---------- */
 let nes = null, romStr = null, romName = '', running = false, playStr = null;
@@ -305,22 +324,99 @@ function start() {
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
 function showErr(m) { const e = $('err'); e.textContent = m; e.hidden = !m; }
-function setRomLabel() {
-  $('romLabel').textContent = romName ? romName.toUpperCase() : 'NESSUNA CARTUCCIA';
+/* ---------- cartucciera: many ROMs in IndexedDB ('carts' = [{id,name}], 'cart:<id>' = ROM string; id = content hash) ---------- */
+let carts = [], selId = null;
+function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); }
+function renderShelf() {
+  const shelf = $('shelf'), focusId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.id : null;
+  shelf.textContent = '';
+  for (const c of carts) {
+    const b = document.createElement('button');
+    b.className = 'cartridge' + (c.id === selId ? ' sel' : '');
+    b.dataset.id = c.id;
+    b.style.setProperty('--h', parseInt(c.id.slice(0, 4), 16) % 360);
+    b.setAttribute('aria-label', c.name + (c.id === selId ? ' (inserita)' : ''));
+    const lab = document.createElement('span'), t = document.createElement('b');
+    lab.className = 'lab'; t.textContent = c.name.toUpperCase();
+    lab.append(t); b.append(lab); shelf.append(b);
+    if (c.id === focusId) b.focus();
+  }
+  const add = document.createElement('button');
+  add.className = 'cartridge add'; add.dataset.add = '1';
+  add.innerHTML = '<big>+</big>AGGIUNGI<br>.NES / .ZIP';
+  shelf.append(add);
+  $('romLabel').textContent = selId ? romName.toUpperCase() : (carts.length ? 'SCEGLI UNA CARTUCCIA' : 'CARTUCCIERA VUOTA: AGGIUNGI UNA ROM');
   $('bResume').hidden = !romStr;
+  $('bDel').hidden = !selId;
   $('cheats').hidden = !cheatable(romStr);
+  padsChanged();
 }
-$('bPick').addEventListener('click', () => $('file').click());
-$('file').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = '';
-  if (!f) return;
-  showErr('');
-  try {
-    const r = await readRomFile(f);
-    romStr = r.str; romName = r.name; setRomLabel();
-    kvSet('rom', {name:romName, str:romStr});
-  } catch (err) { showErr(err.message); }
+async function selectCart(id) {
+  const c = carts.find(x => x.id === id);
+  selId = c ? id : null; romName = c ? c.name : ''; romStr = null;
+  if (c) lsSet('nes-cart', id);
+  renderShelf();
+  if (!c) return;
+  const str = await kvGet('cart:' + id);
+  if (selId !== id) return;
+  romStr = str || null;
+  showErr(romStr ? '' : 'Cartuccia illeggibile: toglila e caricala di nuovo');
+  renderShelf();
+}
+async function addCart(name, str) {
+  const id = fnv(str);
+  if (!carts.some(c => c.id === id)) {
+    if (!await kvSet('cart:' + id, str)) throw new Error('Salvataggio non riuscito (spazio esaurito?): togli qualche cartuccia');
+    carts.push({id, name});
+    if (!await kvSet('carts', carts)) { carts.pop(); await kvDel('cart:' + id); throw new Error('Salvataggio non riuscito'); }
+  }
+  return id;
+}
+let shelfBusy = false;
+$('shelf').addEventListener('click', e => {
+  const b = e.target.closest('.cartridge');
+  if (!b || shelfBusy) return;
+  if (b.dataset.add) { $('file').click(); return; }
+  if (b.dataset.id === selId && romStr) start(); else selectCart(b.dataset.id);
 });
+$('file').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  showErr('');
+  let last = null;
+  const errs = [];
+  for (const f of files) {
+    try { const r = await readRomFile(f); last = await addCart(r.name, r.str); }
+    catch (err) { errs.push(f.name + ': ' + err.message); }
+  }
+  if (last) await selectCart(last);
+  showErr(errs.join(' · '));
+});
+$('bDel').addEventListener('click', async () => {
+  const c = carts.find(x => x.id === selId);
+  if (!c || !confirm('Togliere "' + c.name + '" dalla cartucciera?')) return;
+  shelfBusy = true;
+  const rest = carts.filter(x => x.id !== c.id);
+  if (await kvSet('carts', rest)) {
+    carts = rest;
+    for (const k of ['cart:', 'state:']) await kvDel(k + c.id);
+    for (const tag of Object.keys(CHEATS).concat('god+lives30')) await kvDel('state:' + c.id + ':' + tag);
+    await selectCart(carts.length ? carts[0].id : null);
+  } else showErr('Non sono riuscito a togliere la cartuccia');
+  shelfBusy = false;
+});
+function stepCart(d) {
+  if (!carts.length) return;
+  const i = carts.findIndex(x => x.id === selId);
+  selectCart(carts[((i < 0 ? 0 : i + d) + carts.length) % carts.length].id);
+}
+async function loadShelf() {
+  const saved = await kvGet('carts');
+  carts = Array.isArray(saved) ? saved.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string') : [];
+  const old = await kvGet('rom');   // single-ROM storage of the previous version
+  if (old && old.str) { try { await addCart(old.name, old.str); await kvDel('rom'); } catch (e) { showErr('Non sono riuscito a spostare la vecchia ROM nella cartucciera: ' + e.message); } }
+  const want = lsGet('nes-cart');
+  selectCart(carts.some(c => c.id === want) ? want : carts.length ? carts[0].id : null);
+}
 $('bResume').addEventListener('click', start);
 $('bEject').addEventListener('click', () => { running = false; releaseAll(); $('loader').hidden = false; });
 
@@ -334,7 +430,7 @@ $('bSave').addEventListener('click', async () => {
 });
 $('bLoad').addEventListener('click', async () => {
   if (!nes || !running) return;
-  const s = await kvGet(stateKey());
+  const s = (await kvGet(stateKey())) || (await kvGet(stateKey(romName)));   // name key = states saved before the cartucciera
   if (!s) { toast('NESSUN SALVATAGGIO'); return; }
   try { s.romData = playStr; nes.fromJSON(s); toast('STATO CARICATO'); }
   catch (e) { toast('CARICAMENTO NON RIUSCITO'); }
@@ -436,7 +532,7 @@ holdBtn($('bSta'), C.BUTTON_START);
 
 /* physical gamepads (Gamepad API): 1st connected = player 1, 2nd = player 2.
    Face buttons by position: right/top = A, bottom/left = B (NES layout); A⇄B swaps them. */
-let swapAB = lsGet('nes-swapab') === '1', padMode = false, padStartPrev = false;
+let swapAB = lsGet('nes-swapab') === '1', padMode = false, padStartPrev = false, padNavPrev = 0;
 const bSwap = $('bSwap');
 function setSwap(v) { swapAB = v; bSwap.setAttribute('aria-pressed', String(v)); lsSet('nes-swapab', v ? '1' : '0'); }
 setSwap(swapAB);
@@ -472,8 +568,12 @@ function pollPads() {
     if (st && (st[C.BUTTON_START] || st[C.BUTTON_A])) startNow = true;
   }
   if (any && !padMode) setPadMode(true);
-  if (startNow && !padStartPrev && !running && romStr && !$('loader').hidden) start();
+  const onShelf = !running && !$('loader').hidden;
+  if (startNow && !padStartPrev && onShelf && romStr) start();
   padStartPrev = startNow;
+  const nav = pads[0] ? readPad(pads[0]) : null, navDir = nav ? (nav[C.BUTTON_RIGHT] ? 1 : nav[C.BUTTON_LEFT] ? -1 : 0) : 0;
+  if (navDir && navDir !== padNavPrev && onShelf) stepCart(navDir);
+  padNavPrev = navDir;
 }
 function padsChanged() {
   const n = connectedPads().length;
@@ -550,7 +650,7 @@ function tick(ts) {
 requestAnimationFrame(tick);
 
 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, SW, SH);
-kvGet('rom').then(r => { if (r && r.str) { romStr = r.str; romName = r.name; } setRomLabel(); padsChanged(); });
+loadShelf();
 })();
 </script>
 </body>

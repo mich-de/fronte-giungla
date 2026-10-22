@@ -32,12 +32,12 @@ Il giocatore è invulnerabile, il record non viene salvato e compaiono gli strum
 
 **Emulatore NES:** https://mich-de.github.io/fronte-giungla/nes/
 
-Gioca a giochi NES nel browser. Per caricare una ROM:
+Gioca a giochi NES nel browser. Le ROM stanno in una **cartucciera**: uno scaffale di cartucce salvate sul dispositivo (IndexedDB), mai caricate online.
 
 1. Vai al link sopra.
-2. Tocca il pulsante **"Carica ROM"** (o click su `[Carica]`).
-3. Scegli un file `.nes` o `.zip` dal tuo dispositivo.
-4. La ROM viene salvata in locale (IndexedDB) e ricaricata alla visita successiva.
+2. Tocca **+ AGGIUNGI** e scegli uno o più file `.nes` o `.zip`.
+3. Tocca una cartuccia per inserirla, toccala di nuovo (o premi **GIOCA**) per giocare. **⏏** torna alla cartucciera.
+4. **TOGLI CARTUCCIA** la elimina insieme ai suoi salvataggi. Con un controller: sinistra/destra per scegliere, START o A per giocare.
 
 **Comandi:**
 
