@@ -40,10 +40,14 @@ Gioca a giochi NES nel browser. Per caricare una ROM:
 4. La ROM viene salvata in locale (IndexedDB) e ricaricata alla visita successiva.
 
 **Comandi:**
-- Frecce: movimento
-- **Z**: B
-- **X**: A
-- **Invio**: Start
-- **Shift**: Select
-- **F**: schermo intero
-- **%**: mostra/nascondi statistiche
+
+| | Telefono | Controller USB/Bluetooth | Tastiera |
+|---|---|---|---|
+| Direzioni | croce del controller NES a schermo (8 direzioni, si può scorrere) | croce o levetta sinistra | frecce |
+| B / A | pulsanti rossi; dito in mezzo ai due = entrambi | tasti sinistro/basso = B, destro/alto = A | Z / X |
+| Select / Start | SELECT / START | Select / Start | Shift / Invio |
+| Schermo intero | ⛶ | | F |
+
+- A schermo c'è un controller NES (scocca grigia, frontale nero): sotto lo schermo in verticale, diviso in due metà ai lati in orizzontale.
+- Controller fisico: collegalo e premi un tasto. I comandi a schermo spariscono e tornano al primo tocco. Con due controller si gioca in due (es. Contra in cooperativa). **A⇄B** scambia i tasti se il controller li ha invertiti. Nel menu, START o A avvia il gioco.
+- **TB**: turbo su B. **SAV / LOAD**: salvataggio di stato.
