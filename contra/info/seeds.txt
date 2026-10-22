@@ -1,0 +1,50 @@
+; Manual code seeds for classify.py (hex addresses, one per line).
+; Discovered by jsnes RAM tracing + reading inline jump tables da65 showed as .byte.
+;
+; Title screen / attract input handler (reads joypad edge $F5, mask #$30 = START|SELECT):
+C331
+;
+; In-game state machine ($18==5): "lda $2C / jsr LC857" inline word table.
+; Substate dispatch targets:
+CE27
+CE30
+;
+; Substate dispatch targets:
+CE4B
+CE7E
+CE9B
+CED8
+CEE3
+CF2E
+CF9D
+CFE1
+CFEA
+D01F
+D02E
+;
+; Player controller (zp per-player X: $90 lives, $94/$96 pos, $98 subpixel X,
+; $9A/$9C vx, $A0 grounded, $A4 pose, $C4 subpixel Y, $C6 vy, $C8, $CA, $D0, $D4 dx):
+D56B
+D593
+D5BB
+D663
+D6D3
+D713
+D723
+D753
+D757
+D773
+D77F
+D79B
+D7A7
+D7AB
+D7DB
+D7F7
+D803
+D823
+D82F
+D83B
+D843
+D89B
+D8CB
+DB28
