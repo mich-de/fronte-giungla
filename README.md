@@ -27,3 +27,23 @@ Il giocatore è invulnerabile, il record non viene salvato e compaiono gli strum
 - riga in basso con posizione, camera, nemici, proiettili e FPS
 - **W** / tasto `C`: cambia arma (N → M → S → L)
 - **»** / tasto `V`: salta avanti di 400 px nel livello
+
+## NES Emulator
+
+**Emulatore NES:** https://mich-de.github.io/fronte-giungla/nes/
+
+Gioca a giochi NES nel browser. Per caricare una ROM:
+
+1. Vai al link sopra.
+2. Tocca il pulsante **"Carica ROM"** (o click su `[Carica]`).
+3. Scegli un file `.nes` o `.zip` dal tuo dispositivo.
+4. La ROM viene salvata in locale (IndexedDB) e ricaricata alla visita successiva.
+
+**Comandi:**
+- Frecce: movimento
+- **Z**: B
+- **X**: A
+- **Invio**: Start
+- **Shift**: Select
+- **F**: schermo intero
+- **%**: mostra/nascondi statistiche
