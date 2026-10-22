@@ -12,11 +12,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-/* Layout: landscape = screen full height, controls float on the sides; portrait = screen on top, pad below */
+/* Layout: landscape = screen full height, NES pad floats on the sides; portrait = screen on top, NES pad below.
+   With a physical gamepad in use (body.padmode) the touch pad is hidden and the screen takes all the space. */
 :root{
   --bg:#0b0b10; --ink:#eceae4; --dim:#8c8f9c; --red:#d8322a; --grey:#3a3c46;
   --glass:rgba(236,234,228,.10); --line:rgba(236,234,228,.28);
   --px:"Press Start 2P", ui-monospace, monospace;
+  --cell:clamp(40px,12.5vmin,56px); --btn:clamp(56px,18vmin,80px);
+  --shell:#c7c4bc; --face:#121216; --cross:#303037; --cross-on:#5a5a64;
   color-scheme:dark;
 }
 html{height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
@@ -24,19 +27,65 @@ body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);
 [hidden]{display:none!important}
 #app{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #screen{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000}
-@media (orientation:portrait){ #app{justify-content:flex-start;padding-top:9vh} }
+@media (orientation:portrait){ #app{justify-content:flex-start;padding-top:52px} body.padmode #app{justify-content:center;padding-top:0} }
 
-#pad{position:absolute;left:0;bottom:0;width:50%;height:72%;z-index:2;touch-action:none}
-#stick{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;border:2px solid var(--line);background:var(--glass);pointer-events:none}
-#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(236,234,228,.28);border:2px solid rgba(236,234,228,.45)}
-#ab{position:absolute;z-index:3;display:flex;gap:14px;align-items:flex-end;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px))}
-.pb{width:76px;height:76px;border-radius:50%;border:2px solid var(--line);background:rgba(216,50,42,.30);color:var(--ink);font:16px/1 var(--px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;touch-action:none;padding:0}
-.pb small{font-size:6px;letter-spacing:.1em;opacity:.8}
-.pb.on{background:rgba(216,50,42,.66);transform:scale(.94)}
-#bA{margin-bottom:40px}
-#ss{position:absolute;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:12px}
-.sb{height:26px;padding:0 12px;border-radius:13px;border:1px solid var(--line);background:rgba(58,60,70,.7);color:var(--ink);font:7px/1 var(--px);letter-spacing:.08em;touch-action:none}
-.sb.on{background:rgba(236,234,228,.35)}
+/* ---------- on-screen NES controller ----------
+   portrait: the whole pad (grey shell, black faceplate) under the screen, d-pad | select/start | B A
+   landscape: the pad splits in two shell halves beside the screen */
+#ctl{position:absolute;inset:0;z-index:2;pointer-events:none}
+#pad{pointer-events:none}
+.half{pointer-events:auto;touch-action:none;display:flex;align-items:center}
+body.padmode #ctl{display:none}
+.shell{background:var(--face);border:9px solid var(--shell);border-radius:12px;box-shadow:0 0 0 1px #8d8a83,inset 0 0 0 2px #000,0 8px 22px rgba(0,0,0,.55)}
+@media (orientation:portrait){
+  :root{--cell:min(9.4vw,50px);--btn:min(12vw,64px)}
+  #ctl{top:auto;height:44%;display:flex;align-items:center;justify-content:center;padding:0 max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));box-sizing:border-box}
+  #pad{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:600px;padding:calc(var(--cell)*.35) calc(var(--cell)*.2);box-sizing:border-box}
+  .half.shell{background:none;border:0;border-radius:0;box-shadow:none}
+  .right{flex:1;justify-content:space-between;gap:calc(var(--cell)*.3)}
+  #ss{flex:1}
+}
+@media (orientation:landscape){
+  :root{--cell:min(12.5vh,54px);--btn:min(16.5vh,72px)}
+  #pad.shell{background:none;border:0;box-shadow:none}
+  .half{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:calc(var(--cell)*.15)}
+  .left{left:calc(8px + env(safe-area-inset-left,0px))}
+  .right{right:calc(8px + env(safe-area-inset-right,0px));flex-direction:column;gap:6px;padding-top:12px}
+  .stripes{display:none}
+}
+
+#dpadZone{padding:calc(var(--cell)*.3);touch-action:none}
+#dpad{position:relative;width:calc(var(--cell)*3);height:calc(var(--cell)*3);pointer-events:none;filter:drop-shadow(0 3px 0 #000)}
+#dpad i{position:absolute;width:var(--cell);height:var(--cell);background:linear-gradient(#36363c,#202024);border:1px solid #44444c;box-sizing:border-box}
+#dpad .c{border-color:transparent}
+#dpad .u{left:var(--cell);top:0;border-radius:6px 6px 0 0}
+#dpad .d{left:var(--cell);top:calc(var(--cell)*2);border-radius:0 0 6px 6px}
+#dpad .l{left:0;top:var(--cell);border-radius:6px 0 0 6px}
+#dpad .r{left:calc(var(--cell)*2);top:var(--cell);border-radius:0 6px 6px 0}
+#dpad .c{left:var(--cell);top:var(--cell)}
+#dpad .c::after{content:"";position:absolute;inset:26%;border-radius:50%;background:rgba(0,0,0,.35)}
+#dpad i:not(.c)::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border:7px solid transparent;margin:-7px}
+#dpad .u::after{border-bottom-color:rgba(236,234,228,.35);margin-top:-11px}
+#dpad .d::after{border-top-color:rgba(236,234,228,.35);margin-top:-3px}
+#dpad .l::after{border-right-color:rgba(236,234,228,.35);margin-left:-11px}
+#dpad .r::after{border-left-color:rgba(236,234,228,.35);margin-left:-3px}
+#dpad i.on{background:var(--cross-on)}
+
+#ss{display:flex;flex-direction:column;align-items:center;gap:calc(var(--cell)*.18)}
+.stripes{width:100%;max-width:150px;height:calc(var(--cell)*.95);background:repeating-linear-gradient(#a7a59f 0 17%,transparent 17% 33%);border-radius:2px}
+.ssbox{display:flex;gap:4px;padding:4px 6px 6px;border-radius:8px;background:#bdbab2;box-shadow:inset 0 -2px 0 #8d8a83}
+.sb{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 4px 4px;border:0;background:none;color:var(--red);font:6px/1 var(--px);letter-spacing:.06em;touch-action:none}
+.sb i{display:block;width:40px;height:12px;border-radius:6px;background:#1a1a1e;box-shadow:0 2px 0 #000}
+.sb.on i{transform:translateY(2px);box-shadow:none;background:#3a3a40}
+
+#btns{display:flex;gap:calc(var(--btn)*.2);padding:calc(var(--btn)*.12);touch-action:none}
+.fb{display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none}
+.well{display:flex;align-items:center;justify-content:center;width:calc(var(--btn)*1.24);height:calc(var(--btn)*1.24);border-radius:10px;background:var(--shell);box-shadow:inset 0 2px 4px rgba(0,0,0,.35),0 1px 0 #e8e5de}
+.fb b{display:block;width:var(--btn);height:var(--btn);border-radius:50%;background:radial-gradient(circle at 35% 30%,#ec4b45,#b81d24 70%);box-shadow:0 4px 0 #6d0f14,inset 0 -3px 6px rgba(0,0,0,.3)}
+.fb.on b{transform:translateY(3px);box-shadow:0 1px 0 #6d0f14;filter:brightness(1.2)}
+.lbl{font:11px/1 var(--px);color:var(--red);margin-right:2px}
+
+/* ---------- top bar, toast, loader ---------- */
 #top{position:absolute;z-index:4;top:calc(8px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:flex;gap:6px}
 .tb{min-width:40px;height:36px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:rgba(11,11,16,.6);color:var(--ink);font:8px/1 var(--px)}
 .tb[aria-pressed="true"]{color:#ffd23a;border-color:rgba(255,210,58,.6)}
@@ -52,6 +101,7 @@ body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);
 .btn{font:10px/1 var(--px);padding:14px 12px;border-radius:6px;border:2px solid var(--line);background:var(--grey);color:var(--ink);letter-spacing:.06em}
 .btn.go{background:var(--red);border-color:#f06a5f}
 .note{font-size:7px;line-height:1.9;color:var(--dim);margin:0}
+#padInfo{color:#ffd23a}
 #err{color:#ff7a70;font-size:8px;line-height:1.7;margin:0}
 button{cursor:pointer}
 button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
@@ -60,16 +110,28 @@ button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
 <body>
 <div id="app">
   <canvas id="screen" width="256" height="240" aria-label="Schermo NES"></canvas>
-  <div id="pad"><div id="stick"><div id="knob"></div></div></div>
-  <div id="ab">
-    <button id="bB" class="pb" aria-label="B">B<small>FUOCO</small></button>
-    <button id="bA" class="pb" aria-label="A">A<small>SALTO</small></button>
-  </div>
-  <div id="ss">
-    <button id="bSel" class="sb">SELECT</button>
-    <button id="bSta" class="sb">START</button>
+  <div id="ctl">
+    <div id="pad" class="shell">
+      <div class="half left shell">
+        <div id="dpadZone" aria-label="Croce direzionale"><div id="dpad"><i class="u"></i><i class="l"></i><i class="c"></i><i class="r"></i><i class="d"></i></div></div>
+      </div>
+      <div class="half right shell">
+        <div id="ss">
+          <div class="stripes"></div>
+          <div class="ssbox">
+            <button id="bSel" class="sb" aria-label="Select">SELECT<i></i></button>
+            <button id="bSta" class="sb" aria-label="Start">START<i></i></button>
+          </div>
+        </div>
+        <div id="btns" aria-label="Pulsanti B e A">
+          <div id="bB" class="fb"><span class="well"><b></b></span><span class="lbl">B</span></div>
+          <div id="bA" class="fb"><span class="well"><b></b></span><span class="lbl">A</span></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="top">
+    <button id="bSwap" class="tb" aria-pressed="false" aria-label="Scambia A e B sul controller" hidden>A&#8644;B</button>
     <button id="bTurbo" class="tb" aria-pressed="false" aria-label="Turbo su B">TB</button>
     <button id="bSave" class="tb" aria-label="Salva stato">SAV</button>
     <button id="bLoad" class="tb" aria-label="Carica stato">LOAD</button>
@@ -89,7 +151,8 @@ button:focus-visible{outline:2px solid #ffd23a;outline-offset:2px}
         <input id="file" type="file" accept=".nes,.zip,application/zip,application/octet-stream" hidden>
       </div>
       <p id="err" hidden></p>
-      <p class="note">La ROM resta solo su questo dispositivo: non viene caricata da nessuna parte.<br>Tastiera: frecce, Z = B, X = A, Invio = Start, Shift = Select, F = schermo intero.</p>
+      <p class="note" id="padInfo" hidden></p>
+      <p class="note">La ROM resta solo su questo dispositivo: non viene caricata da nessuna parte.<br>Controller USB/Bluetooth: collegalo e premi un tasto (2 controller = 2 giocatori).<br>Tastiera: frecce, Z = B, X = A, Invio = Start, Shift = Select, F = schermo intero.</p>
     </div>
   </div>
 </div>
@@ -104,6 +167,7 @@ const cv = $('screen'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(SW, SH);
 const pix = new Uint32Array(img.data.buffer);
 const C = jsnes.Controller;
+const BTNS = [C.BUTTON_A, C.BUTTON_B, C.BUTTON_SELECT, C.BUTTON_START, C.BUTTON_UP, C.BUTTON_DOWN, C.BUTTON_LEFT, C.BUTTON_RIGHT];
 
 /* ---------- storage (IndexedDB: last ROM + save states) ---------- */
 function idb() {
@@ -122,10 +186,11 @@ async function kvSet(k, v) {
   try { const db = await idb(); await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); return true; }
   catch (e) { return false; }
 }
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 /* ---------- audio ---------- */
-let AC = null, muted = false;
-try { muted = localStorage.getItem('nes-muted') === '1'; } catch (e) {}
+let AC = null, muted = lsGet('nes-muted') === '1';
 const RING = 16384, ringL = new Float32Array(RING), ringR = new Float32Array(RING);
 let wPos = 0, rPos = 0;
 function audioInit() {
@@ -196,12 +261,14 @@ async function readRomFile(file) {
   return {name: name.replace(/\.nes$/i, ''), str: bytesToStr(bytes)};
 }
 function start() {
+  if (!romStr) return;
   audioInit();
   nes = makeNes();
   try { nes.loadROM(romStr); }
   catch (e) { showErr('ROM non supportata dall’emulatore: ' + e.message); return; }
   $('loader').hidden = true;
   running = true;
+  replayHeld();
   goFullscreen();
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
@@ -240,72 +307,160 @@ $('bLoad').addEventListener('click', async () => {
   catch (e) { toast('CARICAMENTO NON RIUSCITO'); }
 });
 
-/* ---------- input ---------- */
-const held = {};          // jsnes button -> pressed
-let turbo = false, turboB = false;
-function set(btn, down) {
-  if (held[btn] === down) return;
-  held[btn] = down;
+/* ---------- input: keyboard, touch pad and gamepads are OR-ed per player ---------- */
+const SRC = {KEY:1, TOUCH:2, PAD:4};
+const mask = [{}, {}];    // player -> jsnes button -> bitmask of sources holding it
+let turbo = false;
+const isHeld = (p, btn) => !!mask[p][btn];
+function apply(p, btn, down) {
   if (!nes || !running) return;
   if (btn === C.BUTTON_B && turbo) return;   // B is pulsed by the frame loop
-  down ? nes.buttonDown(1, btn) : nes.buttonUp(1, btn);
+  down ? nes.buttonDown(p + 1, btn) : nes.buttonUp(p + 1, btn);
 }
-function releaseAll() { for (const k in held) set(+k, false); }
+function press(p, btn, src, down) {
+  const m = mask[p][btn] | 0, n = down ? m | src : m & ~src;
+  if (n === m) return;
+  mask[p][btn] = n;
+  if (!m !== !n) apply(p, btn, !!n);
+}
+function releaseAll() {
+  for (let p = 0; p < 2; p++) for (const b of BTNS) if (mask[p][b]) { mask[p][b] = 0; apply(p, b, false); }
+  setDpadView(0, 0, 0, 0); setFaceView(false, false);
+}
+function replayHeld() { for (let p = 0; p < 2; p++) for (const b of BTNS) if (mask[p][b]) apply(p, b, true); }
+
 const KEYS = {ArrowUp:C.BUTTON_UP, ArrowDown:C.BUTTON_DOWN, ArrowLeft:C.BUTTON_LEFT, ArrowRight:C.BUTTON_RIGHT,
   KeyZ:C.BUTTON_B, KeyX:C.BUTTON_A, Enter:C.BUTTON_START, ShiftLeft:C.BUTTON_SELECT, ShiftRight:C.BUTTON_SELECT};
 addEventListener('keydown', e => {
   if (e.code === 'KeyF' && !e.repeat) toggleFullscreen();
-  if (KEYS[e.code] !== undefined) { e.preventDefault(); audioInit(); set(KEYS[e.code], true); }
+  if (KEYS[e.code] !== undefined) { e.preventDefault(); audioInit(); press(0, KEYS[e.code], SRC.KEY, true); }
 });
-addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) set(KEYS[e.code], false); });
+addEventListener('keyup', e => { if (KEYS[e.code] !== undefined) press(0, KEYS[e.code], SRC.KEY, false); });
 addEventListener('blur', releaseAll);
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-const pad = $('pad'), stick = $('stick'), knob = $('knob');
-let stickId = null, sx0 = 0, sy0 = 0;
-function restStick() { stick.style.left = '100px'; stick.style.top = Math.max(74, pad.clientHeight - 100) + 'px'; }
-function dirs(u, d, l, r) { set(C.BUTTON_UP, u); set(C.BUTTON_DOWN, d); set(C.BUTTON_LEFT, l); set(C.BUTTON_RIGHT, r); }
-function moveStick(e) {
-  let dx = e.clientX - sx0, dy = e.clientY - sy0;
-  const d = Math.hypot(dx, dy), max = 46;
-  if (d > max * 1.5) { sx0 += dx * (1 - max * 1.5 / d); sy0 += dy * (1 - max * 1.5 / d); }
-  const k = d > max ? max / d : 1;
-  knob.style.transform = `translate(${dx * k}px,${dy * k}px)`;
-  if (d < 12) { dirs(false, false, false, false); return; }
-  const sec = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;   // 0 = right, clockwise
-  dirs(sec >= 5 && sec <= 7, sec >= 1 && sec <= 3, sec >= 3 && sec <= 5, sec === 7 || sec <= 1);
+const capture = (el, e) => { try { el.setPointerCapture(e.pointerId); } catch (err) {} };   // pointer may already be gone
+
+/* touch D-pad: one finger, 8 directions from the cross centre, slide freely */
+const dz = $('dpadZone'), dp = $('dpad'), arm = {};
+for (const k of 'udlr') arm[k] = dp.querySelector('.' + k);
+let dpId = null;
+function setDpadView(u, d, l, r) { arm.u.classList.toggle('on', !!u); arm.d.classList.toggle('on', !!d); arm.l.classList.toggle('on', !!l); arm.r.classList.toggle('on', !!r); }
+function touchDirs(u, d, l, r) {
+  press(0, C.BUTTON_UP, SRC.TOUCH, u); press(0, C.BUTTON_DOWN, SRC.TOUCH, d);
+  press(0, C.BUTTON_LEFT, SRC.TOUCH, l); press(0, C.BUTTON_RIGHT, SRC.TOUCH, r);
+  setDpadView(u, d, l, r);
 }
-pad.addEventListener('pointerdown', e => {
+function dpadAt(e) {
+  const rc = dp.getBoundingClientRect();
+  const dx = e.clientX - (rc.left + rc.width / 2), dy = e.clientY - (rc.top + rc.height / 2);
+  if (Math.hypot(dx, dy) < rc.width * 0.12) { touchDirs(false, false, false, false); return; }
+  const sec = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;   // 0 = right, clockwise
+  touchDirs(sec >= 5 && sec <= 7, sec >= 1 && sec <= 3, sec >= 3 && sec <= 5, sec === 7 || sec <= 1);
+}
+dz.addEventListener('pointerdown', e => {
   e.preventDefault(); audioInit();
-  if (stickId !== null) return;
-  stickId = e.pointerId; pad.setPointerCapture(e.pointerId);
-  const r = pad.getBoundingClientRect();
-  sx0 = e.clientX; sy0 = e.clientY;
-  stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px';
-  moveStick(e);
+  if (dpId !== null) return;
+  dpId = e.pointerId; capture(dz, e); dpadAt(e);
 });
-pad.addEventListener('pointermove', e => { if (e.pointerId === stickId) moveStick(e); });
-const endStick = e => { if (e.pointerId !== stickId) return; stickId = null; dirs(false, false, false, false); knob.style.transform = ''; restStick(); };
-pad.addEventListener('pointerup', endStick);
-pad.addEventListener('pointercancel', endStick);
+dz.addEventListener('pointermove', e => { if (e.pointerId === dpId) dpadAt(e); });
+const endDpad = e => { if (e.pointerId !== dpId) return; dpId = null; touchDirs(false, false, false, false); };
+dz.addEventListener('pointerup', endDpad);
+dz.addEventListener('pointercancel', endDpad);
+
+/* touch B/A: each finger presses whatever button is under it; sliding between them or resting in the gap holds both */
+const btnZone = $('btns'), faceEl = {a:$('bA'), b:$('bB')}, fingers = new Map();
+function setFaceView(a, b) { faceEl.a.classList.toggle('on', a); faceEl.b.classList.toggle('on', b); }
+function faceAt(e) {
+  const hit = {};
+  for (const k of ['a', 'b']) {
+    const rc = faceEl[k].querySelector('b').getBoundingClientRect();
+    hit[k] = Math.hypot(e.clientX - (rc.left + rc.width / 2), e.clientY - (rc.top + rc.height / 2)) < rc.width * 0.8;
+  }
+  return hit;
+}
+function refreshFace() {
+  let a = false, b = false;
+  for (const h of fingers.values()) { a = a || h.a; b = b || h.b; }
+  press(0, C.BUTTON_A, SRC.TOUCH, a); press(0, C.BUTTON_B, SRC.TOUCH, b);
+  setFaceView(a, b);
+}
+btnZone.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); capture(btnZone, e); fingers.set(e.pointerId, faceAt(e)); refreshFace(); });
+btnZone.addEventListener('pointermove', e => { if (fingers.has(e.pointerId)) { fingers.set(e.pointerId, faceAt(e)); refreshFace(); } });
+const endFace = e => { if (fingers.delete(e.pointerId)) refreshFace(); };
+btnZone.addEventListener('pointerup', endFace);
+btnZone.addEventListener('pointercancel', endFace);
+
 function holdBtn(el, btn) {
-  el.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); el.setPointerCapture(e.pointerId); set(btn, true); el.classList.add('on'); });
-  const up = () => { set(btn, false); el.classList.remove('on'); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); capture(el, e); press(0, btn, SRC.TOUCH, true); el.classList.add('on'); });
+  const up = () => { press(0, btn, SRC.TOUCH, false); el.classList.remove('on'); };
   el.addEventListener('pointerup', up);
   el.addEventListener('pointercancel', up);
   el.addEventListener('lostpointercapture', up);
 }
-holdBtn($('bB'), C.BUTTON_B);
-holdBtn($('bA'), C.BUTTON_A);
 holdBtn($('bSel'), C.BUTTON_SELECT);
 holdBtn($('bSta'), C.BUTTON_START);
+
+/* physical gamepads (Gamepad API): 1st connected = player 1, 2nd = player 2.
+   Face buttons by position: right/top = A, bottom/left = B (NES layout); A⇄B swaps them. */
+let swapAB = lsGet('nes-swapab') === '1', padMode = false, padStartPrev = false;
+const bSwap = $('bSwap');
+function setSwap(v) { swapAB = v; bSwap.setAttribute('aria-pressed', String(v)); lsSet('nes-swapab', v ? '1' : '0'); }
+setSwap(swapAB);
+bSwap.addEventListener('click', () => { setSwap(!swapAB); toast(swapAB ? 'A/B SCAMBIATI' : 'A/B NORMALI'); });
+function setPadMode(v) {
+  if (padMode === v) return;
+  padMode = v;
+  document.body.classList.toggle('padmode', v);
+  if (v) { for (const b of BTNS) press(0, b, SRC.TOUCH, false); fingers.clear(); dpId = null; setDpadView(0, 0, 0, 0); setFaceView(false, false); }
+  fit();
+}
+const connectedPads = () => navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : [];
+function readPad(g) {
+  const b = i => !!(g.buttons[i] && g.buttons[i].pressed), ax = i => g.axes[i] || 0;
+  let a = b(1) || b(3), bb = b(0) || b(2);
+  if (swapAB) [a, bb] = [bb, a];
+  return {
+    [C.BUTTON_UP]: b(12) || ax(1) < -0.5, [C.BUTTON_DOWN]: b(13) || ax(1) > 0.5,
+    [C.BUTTON_LEFT]: b(14) || ax(0) < -0.5, [C.BUTTON_RIGHT]: b(15) || ax(0) > 0.5,
+    [C.BUTTON_A]: a, [C.BUTTON_B]: bb, [C.BUTTON_SELECT]: b(8), [C.BUTTON_START]: b(9)
+  };
+}
+function pollPads() {
+  const pads = connectedPads();
+  let any = false, startNow = false;
+  for (let p = 0; p < 2; p++) {
+    const st = pads[p] ? readPad(pads[p]) : null;
+    for (const b of BTNS) {
+      const v = !!(st && st[b]);
+      press(p, b, SRC.PAD, v);
+      any = any || v;
+    }
+    if (st && (st[C.BUTTON_START] || st[C.BUTTON_A])) startNow = true;
+  }
+  if (any && !padMode) setPadMode(true);
+  if (startNow && !padStartPrev && !running && romStr && !$('loader').hidden) start();
+  padStartPrev = startNow;
+}
+function padsChanged() {
+  const n = connectedPads().length;
+  bSwap.hidden = !n;
+  const info = $('padInfo');
+  info.hidden = !n;
+  info.textContent = n ? (n > 1 ? '2 CONTROLLER PRONTI' : 'CONTROLLER PRONTO') + (romStr ? ': START PER GIOCARE' : '') : '';
+  if (!n) setPadMode(false);
+}
+addEventListener('gamepadconnected', e => { padsChanged(); setPadMode(true); toast('CONTROLLER ' + Math.min(2, connectedPads().length) + ' COLLEGATO'); });
+addEventListener('gamepaddisconnected', () => { padsChanged(); toast('CONTROLLER SCOLLEGATO'); });
+document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && padMode) setPadMode(false); }, true);
+
 $('bTurbo').addEventListener('click', () => {
   turbo = !turbo; $('bTurbo').setAttribute('aria-pressed', String(turbo));
-  if (nes) nes.buttonUp(1, C.BUTTON_B);
+  if (nes) { nes.buttonUp(1, C.BUTTON_B); nes.buttonUp(2, C.BUTTON_B); if (!turbo) replayHeld(); }
   toast(turbo ? 'TURBO B ATTIVO' : 'TURBO B SPENTO');
 });
 const bMute = $('bMute');
-function setMute(m) { muted = m; bMute.setAttribute('aria-pressed', String(m)); try { localStorage.setItem('nes-muted', m ? '1' : '0'); } catch (e) {} }
+function setMute(m) { muted = m; bMute.setAttribute('aria-pressed', String(m)); lsSet('nes-muted', m ? '1' : '0'); }
 setMute(muted);
 bMute.addEventListener('click', () => { audioInit(); setMute(!muted); });
 document.querySelectorAll('.tb').forEach(b => b.addEventListener('click', () => b.blur()));
@@ -328,12 +483,16 @@ if (!fsReq) $('bFs').hidden = true;
 $('bFs').addEventListener('click', toggleFullscreen);
 function fit() {
   const app = $('app'), cs = getComputedStyle(app);
-  const aw = app.clientWidth, ah = app.clientHeight - parseFloat(cs.paddingTop);
-  const portrait = ah > aw;
-  const s = Math.min(aw / SW, (portrait ? ah * 0.52 : ah) / SH);
+  const aw = app.clientWidth, h = app.clientHeight;
+  const portrait = h > aw;
+  const ctlH = portrait && !padMode ? $('ctl').offsetHeight : 0;
+  let s = Math.min(aw / SW, (h - parseFloat(cs.paddingTop) - ctlH) / SH);
+  if (!portrait && !padMode) {   // shrink the screen (up to 30%) so the pad halves don't cover it
+    const side = Math.max(document.querySelector('.left').offsetWidth, document.querySelector('.right').offsetWidth) + 12;
+    s = Math.min(s, Math.max(s * 0.7, (aw - 2 * side) / SW));
+  }
   cv.style.width = Math.floor(SW * s) + 'px';
   cv.style.height = Math.floor(SH * s) + 'px';
-  restStick();
 }
 addEventListener('resize', fit);
 document.addEventListener('fullscreenchange', () => setTimeout(fit, 60));
@@ -344,12 +503,13 @@ fit();
 let acc = 0, last = 0, fcount = 0;
 function tick(ts) {
   requestAnimationFrame(tick);
+  pollPads();
   if (!last) last = ts;
   acc += Math.min(100, ts - last); last = ts;
   if (!running || document.hidden) { acc = 0; return; }
   let n = 0;
   while (acc >= 1000 / 60 && n < 3) {
-    if (turbo) { fcount++; (held[C.BUTTON_B] && (fcount & 4)) ? nes.buttonDown(1, C.BUTTON_B) : nes.buttonUp(1, C.BUTTON_B); }
+    if (turbo) { fcount++; for (let p = 0; p < 2; p++) (isHeld(p, C.BUTTON_B) && (fcount & 4)) ? nes.buttonDown(p + 1, C.BUTTON_B) : nes.buttonUp(p + 1, C.BUTTON_B); }
     nes.frame(); acc -= 1000 / 60; n++;
   }
   ctx.putImageData(img, 0, 0);
@@ -357,7 +517,7 @@ function tick(ts) {
 requestAnimationFrame(tick);
 
 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, SW, SH);
-kvGet('rom').then(r => { if (r && r.str) { romStr = r.str; romName = r.name; } setRomLabel(); });
+kvGet('rom').then(r => { if (r && r.str) { romStr = r.str; romName = r.name; } setRomLabel(); padsChanged(); });
 })();
 </script>
 </body>
