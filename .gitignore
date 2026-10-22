@@ -2,3 +2,5 @@
 *.zip
 node_modules/
 __pycache__/
+!nes/Super Mario Bros. (Europe) (Rev A).nes
+!nes/Super Mario Bros. (Europe) (Rev A).zip
